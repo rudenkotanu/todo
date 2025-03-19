@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToDo App</title>
+    <script src="/node_modules/jquery/dist/jquery.min.js"></script>
+    <link href="node_modules/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Список завдань</h1>
+        
+        <div class="mb-3">
+            <input type="text" id="search-input" class="form-control" placeholder="Пошук задач..." />
+        </div>
+       
+        <div id="task-list" class="mt-4">
+            <!-- Задачі будуть додаватися сюди за допомогою JavaScript -->
+        </div>
+
+        <button id="add-task-button" class="btn btn-primary mt-4" data-bs-toggle="modal" data-bs-target="#addTaskModal">
+            Додати задачу
+        </button>
+    </div>
+
+    <!-- Модальне вікно для додавання задачі -->
+    <div class="modal fade" id="addTaskModal" tabindex="-1" aria-labelledby="addTaskModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addTaskModalLabel">Додати задачу</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрити"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-task-form">
+                        <div class="mb-3">
+                            <label for="task-title" class="form-label">Назва задачі</label>
+                            <input type="text" class="form-control" id="task-title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="task-description" class="form-label">Опис задачі</label>
+                            <textarea class="form-control" id="task-description" rows="3" required></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрити</button>
+                    <button type="submit" class="btn btn-primary" id="save-task-button">Додати задачу</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editTaskModal" tabindex="-1" aria-labelledby="editTaskModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editTaskModalLabel">Редагувати задачу</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрити"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-task-form">
+                        <div class="mb-3">
+                            <label for="edit-task-title" class="form-label">Назва задачі</label>
+                            <input type="text" class="form-control" id="edit-task-title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-task-description" class="form-label">Опис задачі</label>
+                            <textarea class="form-control" id="edit-task-description" rows="3" required></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрити</button>
+                    <button type="submit" class="btn btn-primary" id="update-task-button">Зберегти зміни</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        async function loadTasks(searchQuery = '') {
+            try {
+                const response = await fetch('http://localhost:3000/tasks');
+                const tasks = await response.json();
+
+                const taskList = document.getElementById('task-list');
+                taskList.innerHTML = ''; 
+
+                if (tasks.length > 0) {
+                        const filteredTasks = tasks.filter(task => {
+                        return task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                               task.description.toLowerCase().includes(searchQuery.toLowerCase());
+                    });
+
+                    filteredTasks.forEach(task => {
+                        const taskItem = document.createElement('div');
+                        taskItem.classList.add('card', 'mb-2');
+
+                        const cardBody = document.createElement('div');
+                        cardBody.classList.add('card-body');
+
+                        const taskTitle = document.createElement('h5');
+                        taskTitle.classList.add('card-title');
+                        taskTitle.textContent = task.title;
+
+                        const taskDesc = document.createElement('p');
+                        taskDesc.classList.add('card-text');
+                        taskDesc.textContent = task.description;
+                     
+                        const taskStatus = document.createElement('p');
+                        taskStatus.classList.add('text-muted');
+                        taskStatus.innerHTML = task.status
+                            ? '<span class="text-success"><s>Виконано</s> ✅</span>'
+                            : 'Не виконано';
+
+                        const statusButton = document.createElement('button');
+                        statusButton.classList.add('btn', 'btn-info', 'mt-2');
+                        statusButton.textContent = task.status ? 'Позначити як не виконано' : 'Позначити як виконано';
+                        statusButton.addEventListener('click', async () => {
+                            try {
+                                const updatedTask = {
+                                    ...task,
+                                    status: !task.status, 
+                                };
+                                const response = await fetch(`http://localhost:3000/tasks/${task.id}`, {
+                                    method: 'PUT',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify(updatedTask),
+                                });
+                                const result = await response.json();
+                                if (response.ok) {
+                                                                     task.status = result.status; 
+                                    taskStatus.innerHTML = task.status
+                                        ? '<span class="text-success"><s>Виконано</s> ✅</span>'
+                                        : 'Не виконано';
+                                    statusButton.textContent = task.status ? 'Позначити як не виконано' : 'Позначити як виконано';
+                                    taskTitle.style.textDecoration = task.status ? 'line-through' : 'none'; 
+                                } else {
+                                    console.error('Error updating task status:', result.error);
+                                }
+                            } catch (error) {
+                                console.error('Error updating task status:', error);
+                            }
+                        });
+
+                        const editButton = document.createElement('button');
+                        editButton.classList.add('btn', 'btn-warning', 'mt-2', 'ms-2');
+                        editButton.textContent = 'Редагувати';
+                        editButton.addEventListener('click', () => {
+                 
+                            document.getElementById('edit-task-title').value = task.title;
+                            document.getElementById('edit-task-description').value = task.description;
+                            document.getElementById('update-task-button').setAttribute('data-task-id', task.id);
+                            const editTaskModal = new bootstrap.Modal(document.getElementById('editTaskModal'));
+                            editTaskModal.show();
+                        });
+
+                        const deleteButton = document.createElement('button');
+                        deleteButton.classList.add('btn', 'btn-danger', 'mt-2', 'ms-2');
+                        deleteButton.textContent = 'Видалити';
+                        deleteButton.addEventListener('click', async () => {
+                            const isConfirmed = confirm('Ви впевнені, що хочете видалити цю задачу?');
+                            if (isConfirmed) {
+                                try {
+                                    await fetch(`http://localhost:3000/tasks/${task.id}`, {
+                                        method: 'DELETE',
+                                    });
+                                    loadTasks(); 
+                                } catch (error) {
+                                    console.error('Error deleting task:', error);
+                                }
+                            }
+                        });
+                     
+                        cardBody.appendChild(taskTitle);
+                        cardBody.appendChild(taskDesc);
+                        cardBody.appendChild(taskStatus);
+                        cardBody.appendChild(statusButton);
+                        cardBody.appendChild(editButton);
+                        cardBody.appendChild(deleteButton);
+                        taskItem.appendChild(cardBody);
+                        taskList.appendChild(taskItem);
+                    });
+                } else {
+                    taskList.innerHTML = '<p>No tasks found.</p>';
+                }
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+            }
+        }
+
+        document.getElementById('save-task-button').addEventListener('click', () => {
+            const title = document.getElementById('task-title').value;
+            const description = document.getElementById('task-description').value;
+
+            if (title && description) {
+                const newTask = { title, description, status: false };
+
+                fetch('http://localhost:3000/tasks', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(newTask),
+                }).then(() => {
+                    loadTasks(); // Перезавантажуємо список задач
+                    $('#addTaskModal').modal('hide'); // Закриваємо модальне вікно після додавання
+                }).catch((error) => {
+                    console.error('Error adding task:', error);
+                });
+            }
+        });
+
+        document.getElementById('update-task-button').addEventListener('click', () => {
+            const taskId = document.getElementById('update-task-button').getAttribute('data-task-id');
+            const title = document.getElementById('edit-task-title').value;
+            const description = document.getElementById('edit-task-description').value;
+
+            if (title && description) {
+                const updatedTask = { title, description, status: false };
+
+                fetch(`http://localhost:3000/tasks/${taskId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(updatedTask),
+                }).then(() => {
+                    loadTasks(); // Оновлюємо список задач після оновлення
+                    $('#editTaskModal').modal('hide'); // Закриваємо модальне вікно після оновлення
+                }).catch((error) => {
+                    console.error('Error updating task:', error);
+                });
+            }
+        });
+
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            const searchQuery = e.target.value;
+            loadTasks(searchQuery); // Завантажуємо задачі з фільтрацією
+        });
+      
+        loadTasks();
+    </script>
+</body>
+</html>
