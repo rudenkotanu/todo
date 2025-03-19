@@ -52,7 +52,7 @@ app.get('/tasks', async (req, res) => {
         const result = await pool.query('SELECT * FROM tasks');
         res.json(result.rows);
     } catch (error) {
-        console.error('Error occurred while fetching tasks:', error.message); // Лог помилки
+        console.error('Error occurred while fetching tasks:', error.message); 
         res.status(500).json({ error: error.message });
     }
 });
@@ -86,7 +86,7 @@ app.post('/tasks', async (req, res) => {
         );
         res.status(201).json(result.rows[0]);
     } catch (error) {
-        console.error('Error occurred while creating task:', error.message); // Лог помилки
+        console.error('Error occurred while creating task:', error.message); 
         res.status(500).json({ error: error.message });
     }
 });
@@ -153,7 +153,7 @@ app.delete('/tasks/:id', async (req, res) => {
     try {
         const { id } = req.params;
         await pool.query('DELETE FROM tasks WHERE id = $1', [id]);
-        res.json({ message: 'Завдання видалено' });
+        res.json({ message: 'Завдання видалено!' });
     } catch (error) {
         console.error('Error occurred while deleting task:', error.message); // Лог помилки
         res.status(500).json({ error: error.message });
