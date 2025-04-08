@@ -4,19 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ToDo App</title>
-    <script src="/node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link href="node_modules/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-    <div class="container mt-5">
+    <div class="container mt-5" id="login-container">
+        <h1 class="text-center">Вхід</h1>
+
+        <form id="login-form">
+            <div class="mb-3">
+                <label for="login-email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="login-email" required>
+            </div>
+            <div class="mb-3">
+                <label for="login-password" class="form-label">Пароль</label>
+                <input type="password" class="form-control" id="login-password" required>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Увійти</button>
+        </form>
+
+        <div class="mt-3">
+            <p>Немає акаунту? <a href="#" id="register-link">Зареєструватися</a></p>
+        </div>
+    </div>
+
+    <div class="container mt-5" id="task-container" style="display: none;">
         <h1 class="text-center">Список завдань</h1>
-        
+
         <div class="mb-3">
             <input type="text" id="search-input" class="form-control" placeholder="Пошук задач..." />
         </div>
-       
+
         <div id="task-list" class="mt-4">
-            <!-- Задачі будуть додаватися сюди за допомогою JavaScript -->
+            <!-- Завдання будуть додаватися сюди за допомогою JavaScript -->
         </div>
 
         <button id="add-task-button" class="btn btn-primary mt-4" data-bs-toggle="modal" data-bs-target="#addTaskModal">
@@ -52,45 +73,56 @@
         </div>
     </div>
 
-    <div class="modal fade" id="editTaskModal" tabindex="-1" aria-labelledby="editTaskModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editTaskModalLabel">Редагувати задачу</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрити"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="edit-task-form">
-                        <div class="mb-3">
-                            <label for="edit-task-title" class="form-label">Назва задачі</label>
-                            <input type="text" class="form-control" id="edit-task-title" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="edit-task-description" class="form-label">Опис задачі</label>
-                            <textarea class="form-control" id="edit-task-description" rows="3" required></textarea>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрити</button>
-                    <button type="submit" class="btn btn-primary" id="update-task-button">Зберегти зміни</button>
-                </div>
-            </div>
+   <!-- Форма для реєстрації -->
+<div class="container mt-5" id="register-container" style="display: none;">
+    <h1 class="text-center">Реєстрація</h1>
+    <form id="register-form">
+        <div class="mb-3">
+            <label for="register-email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="register-email" required>
         </div>
+        <div class="mb-3">
+            <label for="register-password" class="form-label">Пароль</label>
+            <input type="password" class="form-control" id="register-password" required>
+        </div>
+        <div class="mb-3">
+            <label for="register-username" class="form-label">Username</label>
+            <input type="text" class="form-control" id="register-username" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Зареєструватися</button>
+    </form>
+    <div class="mt-3">
+        <p>Вже є акаунт? <a href="#" id="login-link">Увійти</a></p>
     </div>
+</div>
 
     <script src="node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Перехід на форму реєстрації
+        document.getElementById('register-link').addEventListener('click', () => {
+            document.getElementById('login-container').style.display = 'none';
+            document.getElementById('register-container').style.display = 'block';
+        });
+    
+        // Перехід на форму входу
+        document.getElementById('login-link').addEventListener('click', () => {
+            document.getElementById('register-container').style.display = 'none';
+            document.getElementById('login-container').style.display = 'block';
+        });
+
         async function loadTasks(searchQuery = '') {
             try {
-                const response = await fetch('http://localhost:3000/tasks');
+                const response = await fetch('http://127.0.0.1:3000/tasks', {
+                    method: 'GET',
+                    credentials: 'include' 
+                });
                 const tasks = await response.json();
 
                 const taskList = document.getElementById('task-list');
                 taskList.innerHTML = ''; 
 
                 if (tasks.length > 0) {
-                        const filteredTasks = tasks.filter(task => {
+                    const filteredTasks = tasks.filter(task => {
                         return task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                                task.description.toLowerCase().includes(searchQuery.toLowerCase());
                     });
@@ -109,7 +141,7 @@
                         const taskDesc = document.createElement('p');
                         taskDesc.classList.add('card-text');
                         taskDesc.textContent = task.description;
-                     
+
                         const taskStatus = document.createElement('p');
                         taskStatus.classList.add('text-muted');
                         taskStatus.innerHTML = task.status
@@ -134,117 +166,120 @@
                                 });
                                 const result = await response.json();
                                 if (response.ok) {
-                                                                     task.status = result.status; 
+                                    task.status = result.status; 
                                     taskStatus.innerHTML = task.status
                                         ? '<span class="text-success"><s>Виконано</s> ✅</span>'
                                         : 'Не виконано';
                                     statusButton.textContent = task.status ? 'Позначити як не виконано' : 'Позначити як виконано';
-                                    taskTitle.style.textDecoration = task.status ? 'line-through' : 'none'; 
-                                } else {
-                                    console.error('Error updating task status:', result.error);
                                 }
                             } catch (error) {
-                                console.error('Error updating task status:', error);
+                                console.error("Error updating task status:", error);
                             }
                         });
 
-                        const editButton = document.createElement('button');
-                        editButton.classList.add('btn', 'btn-warning', 'mt-2', 'ms-2');
-                        editButton.textContent = 'Редагувати';
-                        editButton.addEventListener('click', () => {
-                 
-                            document.getElementById('edit-task-title').value = task.title;
-                            document.getElementById('edit-task-description').value = task.description;
-                            document.getElementById('update-task-button').setAttribute('data-task-id', task.id);
-                            const editTaskModal = new bootstrap.Modal(document.getElementById('editTaskModal'));
-                            editTaskModal.show();
-                        });
-
-                        const deleteButton = document.createElement('button');
-                        deleteButton.classList.add('btn', 'btn-danger', 'mt-2', 'ms-2');
-                        deleteButton.textContent = 'Видалити';
-                        deleteButton.addEventListener('click', async () => {
-                            const isConfirmed = confirm('Ви впевнені, що хочете видалити цю задачу?');
-                            if (isConfirmed) {
-                                try {
-                                    await fetch(`http://localhost:3000/tasks/${task.id}`, {
-                                        method: 'DELETE',
-                                    });
-                                    loadTasks(); 
-                                } catch (error) {
-                                    console.error('Error deleting task:', error);
-                                }
-                            }
-                        });
-                     
                         cardBody.appendChild(taskTitle);
                         cardBody.appendChild(taskDesc);
                         cardBody.appendChild(taskStatus);
                         cardBody.appendChild(statusButton);
-                        cardBody.appendChild(editButton);
-                        cardBody.appendChild(deleteButton);
                         taskItem.appendChild(cardBody);
                         taskList.appendChild(taskItem);
                     });
-                } else {
-                    taskList.innerHTML = '<p>No tasks found.</p>';
                 }
             } catch (error) {
-                console.error('Error loading tasks:', error);
+                console.error('Помилка завантаження задач:', error);
             }
         }
 
-        document.getElementById('save-task-button').addEventListener('click', () => {
-            const title = document.getElementById('task-title').value;
-            const description = document.getElementById('task-description').value;
+        // Форма для входу
+        document.getElementById('login-form').addEventListener('submit', (event) => {
+            event.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
 
-            if (title && description) {
-                const newTask = { title, description, status: false };
+            fetch('http://localhost:3000/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password }),
+                credentials: 'include' 
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message === 'Вхід успішний') {
+                
+                    document.getElementById('login-container').style.display = 'none';
+                    document.getElementById('task-container').style.display = 'block';
+                    loadTasks(); 
+                } else {
+                    alert('Невірний email або пароль');
+                }
+            })
+            .catch(error => {
+                console.error('Помилка входу:', error);
+            });
+        });
 
-                fetch('http://localhost:3000/tasks', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(newTask),
-                }).then(() => {
-                    loadTasks(); // Перезавантажуємо список задач
-                    $('#addTaskModal').modal('hide'); // Закриваємо модальне вікно після додавання
-                }).catch((error) => {
-                    console.error('Error adding task:', error);
-                });
+        // Форма для реєстрації
+        document.getElementById('register-form').addEventListener('submit', (event) => {
+            event.preventDefault();
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const username = document.getElementById('register-username').value;
+
+            fetch('http://localhost:3000/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password, username }) 
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message === 'Користувача зареєстровано') {
+                    alert('Реєстрація успішна');
+                    document.getElementById('register-container').style.display = 'none';
+                    document.getElementById('login-container').style.display = 'block';
+                } else {
+                    alert('Помилка реєстрації');
+                }
+            })
+            .catch(error => {
+                console.error('Помилка реєстрації:', error);
+            });
+        });
+        window.onload = function () {
+    fetch('http://localhost:3000/check-session', { credentials: 'include' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.isAuthenticated) {
+                document.getElementById('login-container').style.display = 'none';
+                document.getElementById('task-container').style.display = 'block';
+                loadTasks();
+            } else {
+                document.getElementById('login-container').style.display = 'block';
+                document.getElementById('task-container').style.display = 'none';
             }
+        })
+        .catch(error => {
+            console.error('Помилка перевірки сесії:', error);
         });
+};
 
-        document.getElementById('update-task-button').addEventListener('click', () => {
-            const taskId = document.getElementById('update-task-button').getAttribute('data-task-id');
-            const title = document.getElementById('edit-task-title').value;
-            const description = document.getElementById('edit-task-description').value;
-
-            if (title && description) {
-                const updatedTask = { title, description, status: false };
-
-                fetch(`http://localhost:3000/tasks/${taskId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(updatedTask),
-                }).then(() => {
-                    loadTasks(); // Оновлюємо список задач після оновлення
-                    $('#editTaskModal').modal('hide'); // Закриваємо модальне вікно після оновлення
-                }).catch((error) => {
-                    console.error('Error updating task:', error);
+        window.onload = function () {
+            fetch('http://localhost:3000/check-session', {credentials: 'include'})
+                .then(response => response.json())
+                .then(data => {
+                    if (data.isAuthenticated) {
+                        document.getElementById('login-container').style.display = 'none';
+                        document.getElementById('task-container').style.display = 'block';
+                        loadTasks();
+                    }
+                })
+                .catch(error => {
+                    console.error('Помилка перевірки сесії:', error);
                 });
-            }
-        });
-
-        document.getElementById('search-input').addEventListener('input', (e) => {
-            const searchQuery = e.target.value;
-            loadTasks(searchQuery); // Завантажуємо задачі з фільтрацією
-        });
-      
-        loadTasks();
+        }
     </script>
 </body>
 </html>

@@ -11,6 +11,9 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "bootstrap": "^5.3.3"
+    "bootstrap": "^5.3.3",
+    "cors": "^2.8.5",
+    "express-session": "^1.18.1",
+    "jquery": "^3.7.1"
   }
 }
